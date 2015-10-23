@@ -34,6 +34,5 @@ class AxisSpeeds():
              self.verticalSpeed])
 
     # Transforms the axis specific speeds into motor specific speeds
-    # TODO: Write test for this!
     def toMotorSignals(self):
         return numpy.dot(self.asArray(),TRANSFORMATION_MATRIX).A1
