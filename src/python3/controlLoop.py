@@ -24,22 +24,11 @@ class ControlLoop:
 
         #--------------------------------------------------
         # Axis rotation planning for all 3 axis
-
-        # order: [x, y, z]
-        rotStates  = [quadro_state.rotation.x, quadro_state.rotation.y, quadro_state.rotation.z]
-        rotTargets = [quadro_target.rotation.x, quadro_target.rotation.y, quadro_target.rotation.z]
-
-        rotPlans = map(
-            lambda (state, target):
-                state.planChangeTo(target).inSeconds(TIME_TO_REACH_TARGET_STATE),
-            zip(rotStates, rotTargets)
-        )
+        rotPlans = quadro_state.rotation.planChangeTo(quadro_target.rotation).inSeconds(TIME_TO_REACH_TARGET_STATE)
 
         #--------------------------------------------------
         # do elevation planning for altitude
-        elevationState  = quadro_state.relativePos.y
-        elevationTarget = quadro_target.relativePos.y
-        elevationPlan = elevationState.planChangeTo(elevationTarget).inSeconds(TIME_TO_REACH_TARGET_STATE)
+        elevationPlan = quadro_state.elevation.planChangeTo(quadro_target.elevation).inSeconds(TIME_TO_REACH_TARGET_STATE)
 
         #--------------------------------------------------
         # Prepare inputs for PIDs
@@ -67,3 +56,5 @@ class ControlLoop:
 
         # transform to motor speeds and send to motors
         self.motors.setSpeed(axisSpeeds.toMotorSignals())
+
+        
