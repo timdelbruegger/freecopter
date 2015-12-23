@@ -4,6 +4,7 @@ from state_change_planning import State
 TIME_BETWEEN_CONTROL_LOOP_UPDATES = 0.02 # 50 Hz
 TIME_TO_REACH_TARGET_STATE = 0.2
 
+
 # Responsible for keeping the Quadrocopter in the air
 # by following some given flight plan
 class ControlLoop:
@@ -14,32 +15,37 @@ class ControlLoop:
         self.yRotPID = pidclass()
         self.zRotPID = pidclass()
         self.vertSpdPID = pidclass()
+        self.target_state = None
 
+    def set_target_state(self, target_state):
+        self.target_state = target_state
+
+    # TODO: break this apart so that we have an update function and a function to set a new target state
     # Do one loop iteration
     # - time_delta:    seconds since last update
     # - quadro_state:  current state from sensor fusion
     # - quadro_target: the target state (from high-level path planning)
     #                  that we should reach within TIME_TO_REACH_TARGET_STATE seconds
-    def step(self, time_delta, quadro_state, quadro_target):
+    def step(self, time_delta, quadro_state):
 
-        #--------------------------------------------------
+        # --------------------------------------------------
         # Axis rotation planning for all 3 axis
-        rotPlans = quadro_state.rotation.planChangeTo(quadro_target.rotation).inSeconds(TIME_TO_REACH_TARGET_STATE)
+        rotPlans = quadro_state.rotation.plan_change_to(self.target_state.rotation).in_seconds(TIME_TO_REACH_TARGET_STATE)
 
-        #--------------------------------------------------
+        # --------------------------------------------------
         # do elevation planning for altitude
-        elevationPlan = quadro_state.elevation.planChangeTo(quadro_target.elevation).inSeconds(TIME_TO_REACH_TARGET_STATE)
+        elevationPlan = quadro_state.elevation.plan_change_to(self.target_state.elevation).in_seconds(TIME_TO_REACH_TARGET_STATE)
 
-        #--------------------------------------------------
+        # --------------------------------------------------
         # Prepare inputs for PIDs
 
         # calculate the target rotation speeds for the very next update
         targetRotSpeeds = map(
-            lambda plan: plan.calculateTargetSpeedForTimePeriod(0,TIME_BETWEEN_CONTROL_LOOP_UPDATES),
+            lambda plan: plan.calculate_target_speed_for_time_period(0, TIME_BETWEEN_CONTROL_LOOP_UPDATES),
             rotPlans
         )
         # calculate the target elevation speed for the very next update
-        targetElevationSpeed = elevationPlan.calculateTargetSpeedForTimePeriod(0,TIME_BETWEEN_CONTROL_LOOP_UPDATES)
+        targetElevationSpeed = elevationPlan.calculate_target_speed_for_time_period(0, TIME_BETWEEN_CONTROL_LOOP_UPDATES)
 
         #--------------------------------------------------
         # Update PIDs
@@ -49,12 +55,10 @@ class ControlLoop:
         # segments would be used. For example, a replanning could be done
         # every 0.1 seconds and the PIDs could adjust the motors every 0.01 seconds.
         axisSpeeds = AxisSpeeds()
-        axisSpeeds.xAxisRotationSpeed = self.xRotPID.update(rotStates(0), targetRotSpeeds(0), time_delta)
-        axisSpeeds.yAxisRotationSpeed = self.yRotPID.update(rotStates(1), targetRotSpeeds(1), time_delta)
-        axisSpeeds.zAxisRotationSpeed = self.zRotPID.update(rotStates(2), targetRotSpeeds(2), time_delta)
-        axisSpeeds.verticalSpeed = self.vertSpdPID.update(elevationState, targetElevationSpeed, time_delta)
+        axisSpeeds.axis_rotation_speeds[0] = self.xRotPID.update(quadro_state.rotation.x, targetRotSpeeds(0), time_delta)
+        axisSpeeds.axis_rotation_speeds[1] = self.yRotPID.update(quadro_state.rotation.y, targetRotSpeeds(1), time_delta)
+        axisSpeeds.axis_rotation_speeds[2] = self.zRotPID.update(quadro_state.rotation.z, targetRotSpeeds(2), time_delta)
+        axisSpeeds.vertical_speed = self.vertSpdPID.update(quadro_state.elevationState, targetElevationSpeed, time_delta)
 
         # transform to motor speeds and send to motors
         self.motors.setSpeed(axisSpeeds.toMotorSignals())
-
-        

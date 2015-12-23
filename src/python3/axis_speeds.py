@@ -22,16 +22,12 @@ TRANSFORMATION_MATRIX = 0.25*numpy.transpose(numpy.matrix([
 class AxisSpeeds():
 
     def __init__(self):
-        self.xAxisRotationSpeed = 0 # roll axis
-        self.yAxisRotationSpeed = 0 # yaw axis
-        self.zAxisRotationSpeed = 0 # pitch axis
-        self.verticalSpeed = 0 # up
+        self.axis_rotation_speeds = numpy.zeros(3)
+        self.vertical_speed = 0 # up
 
     # Returns the speeds as an array. Does no transformation!
     def asArray(self):
-        return numpy.array(
-            [self.xAxisRotationSpeed, self.yAxisRotationSpeed, self.zAxisRotationSpeed,
-             self.verticalSpeed])
+        return numpy.append(self.axis_rotation_speeds, self.vertical_speed)
 
     # Transforms the axis specific speeds into motor specific speeds
     def toMotorSignals(self):

@@ -1,10 +1,11 @@
 import numpy
 
+
 # Own implementation of a PID controller. Ideas based on the Arduino code from
 # Brett Beauregard: http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/
 # - Derivative Kick
 # - Reset window mitigation
-class PIDController():
+class PIDController:
 
     def __init__(self, kp, ki, kd, state, minOutput, maxOutput):
         self.kp = kp # proportional coefficient
