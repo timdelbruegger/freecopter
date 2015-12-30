@@ -3,6 +3,7 @@ import RTIMU
 import logging
 from datetime import datetime
 
+from sensors.range_finder_process import UltrasonicRangeFinderProcess
 from state_change_planning_3d import State3d
 from state_change_planning import State
 import os.path
@@ -12,6 +13,11 @@ RT_IMU_LIB_SETTINGS_FILE = "RTIMULib"
 
 # In a 3d vector with indizes (0,1,2), this index is for the "Up" direction
 UP_AXIS_INDEX = 1
+
+# define GPIO pins for downward ultrasonic range finder
+RANGE_FINDER_DOWN_Trigger = 17
+RANGE_FINDER_DOWN_Echo = 18
+
 
 # Accumulates and fuses data from all sensors for a complete sense of the current state.
 # Mostly delegates to RTIMULib for a first implementation
@@ -56,16 +62,23 @@ class StateProvider:
         self.pollInterval = self.imu.IMUGetPollInterval() / 1000.0
         self.log.info("Used Poll Interval: %fs\n" % self.pollInterval)
 
+        self.log.info("Initiating ultrasonic range finder")
+        self.downDistanceSensor = UltrasonicRangeFinderProcess(RANGE_FINDER_DOWN_Trigger, RANGE_FINDER_DOWN_Echo)
+        self.downDistanceSensor.start()
+
+        self.log.info("Done! We can start...")
+
         self.firstReading = True
         self.startHeightAboveSea = None
         self.lastUpdate = datetime.now()
+
 
     def registerListener(self, listener):
         self.log.debug("Appending listener: " + listener.name)
         self.__listeners.append(listener)
 
     # Combines IMU and Pressure readings into a full quadrocopter state
-    def _read_state(self, imu_data, pressure_data):
+    def _read_state(self, imu_data, pressure_data, elevation_state):
         # here we compile the data
         newstate = QuadrocopterState()
 
@@ -104,7 +117,7 @@ class StateProvider:
         # pressure should always be valid, but the code should not crash if we get a False here.
         if air_pressure_valid:
             newstate.airPressure = air_pressure
-            newstate.heightAboveSea = computeHeight(newstate.airPressure)
+            newstate.heightAboveSea = compute_height(newstate.airPressure)
 
             # special operation for first reading
             if self.firstReading:
@@ -122,8 +135,11 @@ class StateProvider:
         (newstate.rotation.x.value, newstate.rotation.y.value, newstate.rotation.z.value) = newstate.raw["fusionPose"]
         (newstate.rotation.x.speed, newstate.rotation.y.speed, newstate.rotation.z.speed) = newstate.raw["gyro"]
 
-        return newstate
+        # TODO: For now, we don't take the orientation into account here
+        # Of course this is not correct if the quadrocopter is not even in the air.
+        newstate.elevation = elevation_state
 
+        return newstate
 
     def update(self):
         finished = False
@@ -132,7 +148,7 @@ class StateProvider:
 
                 finished = True
 
-                newstate = self._read_state(self.imu.getIMUData(), self.pressure.pressureRead())
+                newstate = self._read_state(self.imu.getIMUData(), self.pressure.pressureRead(), self.downDistanceSensor.read_distance())
 
                 # new state is ready, we can print it
                 self.log.debug(newstate)
@@ -145,6 +161,8 @@ class StateProvider:
 
                 # save time for next iteration
                 self.lastUpdate = current_time
+
+        self.downDistanceSensor.stop()
 
 
 # Defines the current best estimate of the complete state of the quadrocopter.
@@ -172,7 +190,7 @@ class QuadrocopterState:
         pass
 
     def __str__(self):
-         return "QuadrocopterState = {" +str(self.__dict__)+ "}"
+        return "QuadrocopterState = {" + str(self.__dict__) + "}"
 
 
 # computeHeight() - the conversion uses the formula:
@@ -193,5 +211,5 @@ class QuadrocopterState:
 #
 #  h = 44330.8 * (1 - (p / P0)**0.190263)
 
-def computeHeight(pressure):
+def compute_height(pressure):
     return 44330.8 * (1 - pow(pressure / 1013.25, 0.190263));

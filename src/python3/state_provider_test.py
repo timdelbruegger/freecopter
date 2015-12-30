@@ -40,14 +40,15 @@ class TestStateProvider(unittest.TestCase):
         self.assertGreater(mock_listener.sumDeltas, 0.1)
 
         # check that all data is present
-
-        # check that everything is fine
         self.assertEqual(invalid_counter.accelInvalidCounter, 0)
         self.assertEqual(invalid_counter.gyroInvalidCounter, 0)
         self.assertEqual(invalid_counter.compassInvalidCounter, 0)
         self.assertEqual(invalid_counter.fusionPoseInvalidCounter, 0)
         self.assertEqual(invalid_counter.pressureInvalidCounter, 0)
         self.assertEqual(invalid_counter.temperatureInvalidCounter, 0)
+
+        self.assertEqual(invalid_counter.invalidElevationSpeedCounter, 0)
+        self.assertEqual(invalid_counter.invalidElevationCounter, 0)
 
 class MockListener:
     def __init__(self, tester):
@@ -60,6 +61,7 @@ class MockListener:
         self.numUpdates += 1
         self.sumDeltas += time_delta
 
+
 class InvalidCounterListener:
     def __init__(self):
         self.accelInvalidCounter = 0
@@ -69,6 +71,10 @@ class InvalidCounterListener:
         self.pressureInvalidCounter = 0
         self.temperatureInvalidCounter = 0
         self.humidityInvalidCounter = 0
+        self.invalidElevationCounter = 0
+        self.invalidElevationValueCounter = 0
+        self.invalidElevationSpeedCounter = 0
+
         self.name = "InvalidCounterListener"
 
     def new_sensor_reading(self, time_delta, newstate):
@@ -88,6 +94,13 @@ class InvalidCounterListener:
             self.temperatureInvalidCounter += 1
         if not newstate.raw["humidityValid"]:
             self.humidityInvalidCounter += 1
+        if newstate.elevation is None:
+            self.invalidElevationCounter += 1
+        else:
+            if newstate.elevation.value is None:
+                self.invalidElevationValueCounter += 1
+            if newstate.elevation.speed is None:
+                self.invalidElevationSpeedCounter += 1
 
 
 if __name__ == '__main__':
