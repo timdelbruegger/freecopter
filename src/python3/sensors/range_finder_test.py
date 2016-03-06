@@ -1,14 +1,10 @@
 from sensors.range_finder import UltrasonicRangeFinder
 from multiprocessing import Queue, Value
-from time import sleep
 import threading
 
 import unittest
 
-# define GPIO pins
-GPIOTrigger = 17
-GPIOEcho    = 18
-
+from util.definitions import GPIO_ULTRASONIC_ECHO, GPIO_ULTRASONIC_TRIGGER
 
 
 # In order to execute this test, an ultrasonic range finder has to be connected to the RPI GPIO ports above.
@@ -22,14 +18,14 @@ class TestStateProvider(unittest.TestCase):
     def test_values_good(self):
         queue = Queue(100)
         stop_flag = Value('i', False)
-        rangefinder = UltrasonicRangeFinder(GPIOTrigger, GPIOEcho)
+        rangefinder = UltrasonicRangeFinder(GPIO_ULTRASONIC_TRIGGER, GPIO_ULTRASONIC_ECHO)
 
         # this should give us around 10 measurements
         t = threading.Timer(0.11, self.stop_range_finder, args=(stop_flag,))
         t.start()
 
         # this will loop until the timer kicks in
-        rangefinder.measure(queue, stop_flag, 0.001)
+        rangefinder.measure(queue, stop_flag, 0)
 
         # last value in queue should be equal to current distance approximation
         last_distance = None
@@ -43,7 +39,6 @@ class TestStateProvider(unittest.TestCase):
         self.assertGreaterEqual(count, 9)
         self.assertEqual(rangefinder.distance, last_distance.value)
         self.assertAlmostEqual(rangefinder.speed, 0, delta=0.5)
-
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ from state_change_planning import State
 # When calculating the new distance, we use a weighted average between the last value and the new measurement (low pass filtering).
 # FILTER_STRENGTH is the weight of the last value, the new value has the weight (1-FILTER_STRENGTH)
 VALUE_FILTER_STRENGTH = 0.7
-SPEED_FILTER_STRENGTH = 0.95
+
 
 # This code works with a HC-SR04 ultrasonic range finder.
 # See http://www.modmypi.com/blog/hc-sr04-ultrasonic-range-sensor-on-the-raspberry-pi
@@ -40,23 +40,24 @@ class UltrasonicRangeFinder:
         GPIO.output(self.gpio_trigger, False)
 
         # store initial start time
-        #time_start = time.time()
+        time_start = time.time()
 
         # store start time
-        if GPIO.input(self.gpio_echo) == 0:
-            print("Waiting for rising Echo edge")
-            GPIO.wait_for_edge(self.gpio_echo, GPIO.BOTH)
-        # while GPIO.input(self.gpio_echo) == 0:
-        time_start = time.time()
+        #if GPIO.input(self.gpio_echo) == 0:
+        #print("Waiting for rising Echo edge")
+        #    GPIO.wait_for_edge(self.gpio_echo, GPIO.RISING)
+        while GPIO.input(self.gpio_echo) == 0:
+            time_start = time.time()
 
         # store stop time
         # this time span is proportionate to the distance of an obstacle
         # if there is no echo (= no obstacle), we this will take 38 ms here.
-        if GPIO.input(self.gpio_echo) == 1:
-            print("Waiting for falling Echo edge")
-            GPIO.wait_for_edge(self.gpio_echo, GPIO.BOTH)
-        # while GPIO.input(self.gpio_echo) == 1:
         time_stop = time.time()
+        #if GPIO.input(self.gpio_echo) == 1:
+        #print("Waiting for falling Echo edge")
+        # GPIO.wait_for_edge(self.gpio_echo, GPIO.FALLING)
+        while GPIO.input(self.gpio_echo) == 1:
+            time_stop = time.time()
 
         # calculate distance
         time_elapsed = time_stop - time_start
@@ -70,7 +71,6 @@ class UltrasonicRangeFinder:
     def measure(self, queue, stop_flag, time_between_measurements):
 
         try:
-            distance_last = None
             time_last_update = time.time()
             while not stop_flag.value:
 
@@ -85,19 +85,13 @@ class UltrasonicRangeFinder:
                         self.speed = 0.0
                     else:
                         newfiltereddistance = self.distance * VALUE_FILTER_STRENGTH + distance_now * (1 - VALUE_FILTER_STRENGTH)
-                        self.speed = self.speed * SPEED_FILTER_STRENGTH + (
-                                                                              newfiltereddistance - self.distance) / duration_measurement * (
-                                                                          1 - SPEED_FILTER_STRENGTH)
-
+                        self.speed = (newfiltereddistance - self.distance) / duration_measurement
                         self.distance = newfiltereddistance
-
-                    distance_last = distance_now
 
                     print("Measured Distance = %.12f m" % distance_now)
                     print("Filtered Distance = %.12f m" % self.distance)
-                    print("Filtered Speed = %.12f m/s" % self.speed)
 
-                    queue.put(State.by_value_and_speed(self.distance,self.speed))
+                    queue.put(State.by_value_and_speed(self.distance, self.speed))
 
                     time.sleep(time_between_measurements)
         finally:

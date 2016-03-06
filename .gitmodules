@@ -1,0 +1,6 @@
+[submodule "src/python3/pyquaternion"]
+	path = src/python3/pyquaternion
+	url = https://github.com/KieranWynn/pyquaternion.git
+[submodule "src/python3/gps"]
+	path = src/python3/gps
+	url = https://github.com/tpoche/gps-python3.git

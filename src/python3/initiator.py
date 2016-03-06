@@ -1,7 +1,8 @@
 from datetime import datetime
 from pid import PIDController
 from motors import AdafruitPwmControlledMotors
-from state_provider import StateProvider
+from sensorfusion.attitude_provider import AttitudeProvider
+from sensorfusion.fusion_master import SensorFusionMaster
 from high_level_logic import HighLevelLogic
 from controlLoop import ControlLoop
 import logging
@@ -16,7 +17,7 @@ class Initiator:
 
         self.motors = AdafruitPwmControlledMotors(debug_flag=True)
         self.controlLoop = ControlLoop(self.motors, PIDController)
-        self.stateProvider = StateProvider()
+        self.sensor_fusion = SensorFusionMaster()
         self.highLevelLogic = HighLevelLogic(self.controlLogic)
 
         # Will be set on the first update.
@@ -33,7 +34,7 @@ class Initiator:
             time_delta = (now - self.time_of_last_update).total_seconds()
 
         # gather sensor information
-        self.stateProvider.update()
+        vehicle_state = self.sensor_fusion.readState()
 
         # high level logic updates the other systems
         self.highLevelLogic.update(time_delta)
