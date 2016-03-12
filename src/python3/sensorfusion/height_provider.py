@@ -11,7 +11,7 @@ from sensors.gps_polling_thread import GpsPollingThread
 from util.timer import Timer
 from state.vehicle_state import VehicleState
 from util.definitions import *
-from pyquaternion import Quaternion
+from quaternion import Quaternion
 
 
 # F: state transition matrix

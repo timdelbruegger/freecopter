@@ -1,7 +1,7 @@
 from multiprocessing import Process, Queue, Value
 from sensors.range_finder import UltrasonicRangeFinder
 from util.definitions import SENSOR_ERROR_MAX, ULTRASONIC_SENSOR_ERROR
-from pyquaternion import Quaternion
+from quaternion import Quaternion
 
 from util.definitions import FORWARD_AXIS, UP_AXIS
 

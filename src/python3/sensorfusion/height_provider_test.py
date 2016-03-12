@@ -2,7 +2,7 @@ import unittest
 from numpy import array
 from sensorfusion.height_provider import HeightProvider, correct_ultrasonic_angle
 import time
-from pyquaternion.quaternion import Quaternion
+from quaternion import Quaternion
 
 from state.attitude_state import AttitudeState
 

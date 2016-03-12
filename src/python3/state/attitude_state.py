@@ -1,6 +1,6 @@
 from state_change_planning_3d import State3d
 
-from pyquaternion.quaternion import Quaternion
+from quaternion import Quaternion
 
 
 # Represents the orientation of the vehicle at one point in time.

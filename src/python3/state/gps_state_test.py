@@ -1,6 +1,6 @@
 import unittest
 from state.attitude_state import AttitudeState
-import gps
+import gpspy3.gps as gps
 from state.gps_state import GPSState
 
 gps_reading = gps.GPSData()

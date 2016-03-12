@@ -1,7 +1,7 @@
 import logging
 import threading
 
-import gps
+from gpspy3 import gps
 from state.gps_state import GPSState
 
 

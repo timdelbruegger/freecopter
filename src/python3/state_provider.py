@@ -1,12 +1,13 @@
-import sys
 import RTIMU
 import logging
+import os.path
+import sys
 from datetime import datetime
 
+from sensorfusion.height_provider import HeightFusion
 from sensors.range_finder_process import UltrasonicRangeFinderProcess
-from state_change_planning_3d import State3d
 from state_change_planning import State
-import os.path
+from state_change_planning_3d import State3d
 
 # contains settings and calibration of accelerometer/gyroscope/magnetometer
 RT_IMU_LIB_SETTINGS_FILE = "RTIMULib"
@@ -19,9 +20,9 @@ RANGE_FINDER_DOWN_Trigger = 17
 RANGE_FINDER_DOWN_Echo = 18
 
 
-# Accumulates and fuses data from all sensors for a complete sense of the current state.
-# Mostly delegates to RTIMULib for a first implementation
-class StateProvider:
+# Accumulates data from gyroscope, accelerometer, magnetometer.
+# Uses the RTIMULib Attitude Sensor Fusion.
+class IMUStateProvider:
     def __init__(self):
         self.log = logging.getLogger("StateProvider")
         self.__listeners = []
@@ -72,7 +73,6 @@ class StateProvider:
         self.startHeightAboveSea = None
         self.lastUpdate = datetime.now()
 
-
     def registerListener(self, listener):
         self.log.debug("Appending listener: " + listener.name)
         self.__listeners.append(listener)
@@ -117,7 +117,7 @@ class StateProvider:
         # pressure should always be valid, but the code should not crash if we get a False here.
         if air_pressure_valid:
             newstate.airPressure = air_pressure
-            newstate.heightAboveSea = compute_height(newstate.airPressure)
+            newstate.heightAboveSeaBarometer = compute_height(newstate.airPressure)
 
             # special operation for first reading
             if self.firstReading:
@@ -149,6 +149,7 @@ class StateProvider:
                 finished = True
 
                 newstate = self._read_state(self.imu.getIMUData(), self.pressure.pressureRead(), self.downDistanceSensor.read_distance())
+                self.fuse_height_data(newstate)
 
                 # new state is ready, we can print it
                 self.log.debug(newstate)
@@ -163,7 +164,6 @@ class StateProvider:
                 self.lastUpdate = current_time
 
         self.downDistanceSensor.stop()
-
 
 # Defines the current best estimate of the complete state of the quadrocopter.
 # This includes the height above the starting position and the orientation in the air and will
@@ -180,13 +180,21 @@ class QuadrocopterState:
         # temperature in Celsius
         self.temperature = None
         self.airPressure = None
-        self.heightAboveSea = None
+        self.heightAboveSeaBarometer = None
 
         self.raw = None
 
         # TODO: include linear speeds
         # TODO: include earth frame speeds/accelerations (oriented north and y axis away from earth)
         # TODO: include GPS position via external service
+        pass
+
+    def world_frame_acceleration(self):
+        return self.to_world_frame(self.body_frame_acceleration)
+
+    # transforms a vector from body frame to world frame
+    def to_world_frame(self, vector):
+        # TODO: realize with orientation quaternion
         pass
 
     def __str__(self):
