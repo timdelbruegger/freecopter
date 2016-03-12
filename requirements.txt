@@ -1,0 +1,9 @@
+Adafruit-BMP==1.5.0
+Adafruit-GPIO==0.8.1
+numpy==1.6.2
+pytest==2.8.5
+RPi.GPIO==0.5.11
+smbus==1.1
+./lib/pyquaternion
+./lib/RTIMULib2/Linux/python
+./lib/gps-python3

@@ -1,6 +1,9 @@
-[submodule "lib/gps"]
-	path = lib/gps
-	url = https://github.com/tpoche/gps-python3.git
+[submodule "lib/RTIMULib2"]
+	path = lib/RTIMULib2
+	url = https://github.com/richards-tech/RTIMULib2.git
+[submodule "lib/gps-python3"]
+	path = lib/gps-python3
+	url = https://github.com/tommyjcarpenter/gps-python3.git
 [submodule "lib/pyquaternion"]
 	path = lib/pyquaternion
-	url = https://github.com/KieranWynn/pyquaternion.git
+	url = https://github.com/timdelbruegger/pyquaternion.git
