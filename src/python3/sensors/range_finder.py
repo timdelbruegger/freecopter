@@ -2,10 +2,11 @@
 import time
 import RPi.GPIO as GPIO
 from state_change_planning import State
+import logging
 
 # When calculating the new distance, we use a weighted average between the last value and the new measurement (low pass filtering).
 # FILTER_STRENGTH is the weight of the last value, the new value has the weight (1-FILTER_STRENGTH)
-VALUE_FILTER_STRENGTH = 0.7
+VALUE_FILTER_STRENGTH = 0.6
 
 
 # This code works with a HC-SR04 ultrasonic range finder.
@@ -19,6 +20,7 @@ class UltrasonicRangeFinder:
         self.gpio_echo = gpio_echo
         self.distance = None
         self.speed = None
+        self.log = logging.getLogger("UltrasonicRangeFinder")
 
         # use GPIO pin numbering convention
         GPIO.setmode(GPIO.BCM)
@@ -70,32 +72,35 @@ class UltrasonicRangeFinder:
     # Stops as soon as
     def measure(self, queue, stop_flag, time_between_measurements):
 
+        self.log.debug("starting ultrasonic measurement")
         try:
             time_last_update = time.time()
             while not stop_flag.value:
 
-                    distance_now = self._measure_distance()
-                    time_now = time.time()
-                    duration_measurement = time_now-time_last_update
-                    time_last_update = time_now
+                distance_now = self._measure_distance()
+                time_now = time.time()
+                duration_measurement = time_now-time_last_update
+                time_last_update = time_now
 
-                    # use weighted average as filter
-                    if self.distance is None:
-                        self.distance = distance_now
-                        self.speed = 0.0
-                    else:
-                        newfiltereddistance = self.distance * VALUE_FILTER_STRENGTH + distance_now * (1 - VALUE_FILTER_STRENGTH)
-                        self.speed = (newfiltereddistance - self.distance) / duration_measurement
-                        self.distance = newfiltereddistance
+                # use weighted average as filter
+                if self.distance is None:
+                    self.distance = distance_now
+                    self.speed = 0.0
+                    self.log.debug("measured distance is zero!")
+                else:
+                    newfiltereddistance = self.distance * VALUE_FILTER_STRENGTH + distance_now * (1 - VALUE_FILTER_STRENGTH)
+                    self.speed = (newfiltereddistance - self.distance) / duration_measurement
+                    self.distance = newfiltereddistance
 
-                    print("Measured Distance = %.12f m" % distance_now)
-                    print("Filtered Distance = %.12f m" % self.distance)
+                self.log.debug("Measured Distance = %.12f m" % distance_now)
+                self.log.debug("Filtered Distance = %.12f m" % self.distance)
 
-                    queue.put(State.by_value_and_speed(self.distance, self.speed))
+                queue.put(State.by_value_and_speed(self.distance, self.speed))
 
-                    time.sleep(time_between_measurements)
+                time.sleep(time_between_measurements)
         finally:
             # after we stop measuring, we should clean up
             # TODO: is this really right? Maybe someone else is still active on GPIO?
             # should not be the case, we are in our own process
             GPIO.cleanup()
+            self.log.debug("GPIO cleanup finished!")

@@ -2,6 +2,8 @@ from sensors.range_finder import UltrasonicRangeFinder
 from multiprocessing import Queue, Value
 import threading
 
+import logging
+
 import unittest
 
 from util.definitions import GPIO_ULTRASONIC_ECHO, GPIO_ULTRASONIC_TRIGGER
@@ -13,15 +15,16 @@ class TestStateProvider(unittest.TestCase):
 
     # just sets the stop flag so that the range finder loop will exit
     def stop_range_finder(self, stop_flag):
+        print("Ultrasonic sensor should stop now.")
         stop_flag.value = True
 
     def test_values_good(self):
-        queue = Queue(100)
+        queue = Queue(1000)
         stop_flag = Value('i', False)
         rangefinder = UltrasonicRangeFinder(GPIO_ULTRASONIC_TRIGGER, GPIO_ULTRASONIC_ECHO)
 
-        # this should give us around 10 measurements
-        t = threading.Timer(0.11, self.stop_range_finder, args=(stop_flag,))
+        # this should give us around 50 measurements
+        t = threading.Timer(0.50, self.stop_range_finder, args=(stop_flag,))
         t.start()
 
         # this will loop until the timer kicks in
@@ -42,4 +45,5 @@ class TestStateProvider(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()

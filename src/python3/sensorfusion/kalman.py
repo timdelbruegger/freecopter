@@ -1,5 +1,8 @@
 from numpy import dot, sum, tile, exp, log, pi, shape, reshape
 from numpy.linalg import inv, pinv, LinAlgError, det
+import logging
+
+logger = logging.getLogger("KalmanFilter")
 
 
 # X: state vector at k-1
@@ -12,15 +15,15 @@ def kf_predict(x, P, A, Q, B, u):
 
     shape_X_before = shape(x)
 
-    print("A: ", A)
-    print("B: ", B)
-    print("x: ", x)
-    print("u: ", u)
+    logger.debug("A: %s", A)
+    logger.debug("B: %s", B)
+    logger.debug("x: %s", x)
+    logger.debug("u: %s", u)
 
-    print("A: ", A.shape)
-    print("B: ", B.shape)
-    print("x: ", x.shape)
-    print("U: ", u.shape)
+    logger.debug("A: %s", A.shape)
+    logger.debug("B: %s", B.shape)
+    logger.debug("x: %s", x.shape)
+    logger.debug("U: %s", u.shape)
 
     assert(shape(u)[0] == B.shape[1])
     assert(A.shape[1] == B.shape[0])
@@ -30,12 +33,12 @@ def kf_predict(x, P, A, Q, B, u):
 
     Bu = reshape(Bu, (shape(Ax)))
 
-    print("dot(A, x): ", Ax)
-    print("dot(B, u): ", Bu)
+    logger.debug("dot(A, x): %s", Ax)
+    logger.debug("dot(B, u): %s", Bu)
 
     x = Ax + Bu
 
-    print("x: ", x)
+    logger.debug("x: %s", x)
 
     P = dot(A, dot(P, A.T)) + Q
 
@@ -63,23 +66,23 @@ def kf_update(X, P, Y, H, R):
     try:
         K = dot(P, dot(H.T, pinv(IS)))
     except LinAlgError:
-        print("LinAlgError on IS inversion (Kalman Gain)")
-        print(IS)
+        logger.error("LinAlgError on IS inversion (Kalman Gain)")
+        logger.error(IS)
         raise
 
-    #print("Kalman Gain G")
-    #print(K)
+    #logger.debug("Kalman Gain G")
+    #logger.debug(K)
 
     # update X, P
     X = X + dot(K, (Y-IM))
     P = P - dot(K, dot(IS, K.T))
 
-    #print(["P in update", P])
+    #logger.debug(["P in update", P])
 
     # predictive probability (likelihood) of measurement
     #LH =gauss_pdf(Y, IM, IS)
 
-    return (X,P,K,IM,IS)#,LH)
+    return X, P, K, IM, IS #, LH
 
 
 def gauss_pdf(X, M, S):

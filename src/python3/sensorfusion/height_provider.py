@@ -27,10 +27,13 @@ def F(delta_time):
 
 # B: influence of vertical acceleration on the state vector
 def B(delta_time):
-    # vertical acceleration influences the altitude quadratically
-    # vertical acceleration influences the vertical speed linearly
-    # vertical acceleration does not influence GPS / barometer ground offsets
-    return array([[0.5*square(delta_time)], [delta_time], [0], [0]])
+    return array([
+        # vertical acceleration influences the altitude quadratically
+        [0.5*square(delta_time)],
+        # vertical acceleration influences the vertical speed linearly
+        [delta_time],
+        # vertical acceleration does not influence GPS / barometer ground offsets
+        [0], [0]])
 
 
 # Reads Barometer + ultrasonic sensor + GPS and fuses them with accelerometer to gather good knowledge of the
@@ -43,6 +46,8 @@ class HeightProvider(LoggingStateProviderWithListeners):
         self.log.debug("setup sensors...")
         self.barometer = PressureTemperatureSensor(RT_IMU_SETTINGS)
         self.ultrasonic = UltrasonicRangeFinderProcess(ultrasonic_gpio_trigger, ultrasonic_gpio_echo)
+
+        self.ultrasonic.start()
 
         self.gps = GpsPollingThread(gps_enabled)
         if gps_enabled:
@@ -57,31 +62,35 @@ class HeightProvider(LoggingStateProviderWithListeners):
         # initial state vector X
         # We assume to be at the ground with speed zero
         x = HeightState(0, 0, 100, 100).as_vector()
-        self.log.debug("x: ", x)
+        self.log.debug("x: %s", x)
 
         # P: covariance matrix at k-1
         # We set the initial probability distribution to be quite confident in the first two state dimensions and very
         # unsure in the GPS / Barometer ground offsets:
         P = diag([0.1, 0.1, 10000, 10000])
-        self.log.debug("P: ", P)
+        self.log.debug("P: %s", P)
 
         # Q: predict noise covariance matrix
         # The state prediction only affects height above ground and vertical speed. Since the influence of the noisy
         # accelerometer reading is stronger on the vertical speed, the noise is stronger there.
         Q = diag([0.3, 0.5, 0, 0])
-        self.log.debug("Q: ", Q)
+        self.log.debug("Q: %s", Q)
 
         # H: measurement prediction matrix
         H = array([[1, 0, 1, 0],  # barometer height measurement
                    [1, 0, 0, 0],  # ultrasonic height measurement
                    [1, 0, 0, 1]])  # gps height measurement
-        self.log.debug("H: ", H)
+        self.log.debug("H: %s", H)
 
         self.kf = KalmanFilter(x=x, P=P, A=F, Q=Q, B=B, H=H)
 
         self.timer = Timer()
 
         self.log.debug("HeightProvider is ready.")
+
+    def stop(self):
+        self.ultrasonic.stop()
+        self.gps.stop()
 
     # perform an update after the given amount of time
     # dt: seconds since last update
@@ -99,21 +108,20 @@ class HeightProvider(LoggingStateProviderWithListeners):
         # TODO: correct ultrasonic measurement by angle to ground normal
         # maybe we don't need this as the ultrasonic wave has some width? For now,
         # we only adjust the accuracy based on the angle
-        height_ultrasonic = dist_ultrasonic
+        height_ultrasonic = dist_ultrasonic.value
 
         # calculate vertical acceleration based on accelerometer data
         vertical_acceleration = calculate_up_acceleration(attitude_state.orientation, attitude_state.acceleration)
 
         # control input
         u = array([vertical_acceleration])
-        self.log.debug("U: ", u)
+        self.log.debug("U: %s", u)
 
         # Kalman Step 1: Predict with input
         self.log.debug("Predict with Input")
         (x, P) = self.kf.predictWithInput(u, dt)
-        self.log.debug("x: ", x)
-        self.log.debug("P: ", P)
-
+        self.log.debug("x: %s", x)
+        self.log.debug("P: %s", P)
 
         # Y: measurement vector
         # TODO: we could also add the GPS climb speed measurement
@@ -123,11 +131,11 @@ class HeightProvider(LoggingStateProviderWithListeners):
         R = diag([baro_reading.height_above_sea_error, ultrasonic_error, gps_reading.altitude_error])
 
         # Kalman Step 2: Update with measurements
-        self.log.debug("Y: ", Y)
-        self.log.debug("R: ", R)
+        self.log.error("Y: %s", Y)
+        self.log.debug("R: %s", R)
         (x, P) = self.kf.updateWithMeasurement(Y, R)
 
-        self.log.debug("X: ", x)
+        self.log.debug("X: %s", x)
 
         newstate = VehicleState(attitude_state, HeightState.fromVector(x), gps_reading, baro_reading)
         self.notify_listeners(newstate)

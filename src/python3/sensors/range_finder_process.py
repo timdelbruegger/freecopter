@@ -2,7 +2,7 @@ from multiprocessing import Process, Queue, Value
 from sensors.range_finder import UltrasonicRangeFinder
 from util.definitions import SENSOR_ERROR_MAX, ULTRASONIC_SENSOR_ERROR
 from quaternion import Quaternion
-
+from state_change_planning import State
 from util.definitions import FORWARD_AXIS, UP_AXIS
 
 import math
@@ -36,7 +36,7 @@ class UltrasonicRangeFinderProcess:
 
     def stop(self):
         self.stop_flag.value = True
-        self.process.join()
+        self.process.join(timeout=0.1)
 
     # The orientation quaternion is used to estimate the accuracy: the more even we stand towards ground,
     # the more exact is our measurement of the height above ground
@@ -47,7 +47,7 @@ class UltrasonicRangeFinderProcess:
             self.distance = self.distance_queue.get(False)
 
         if self.distance is None:
-            return 0.0, SENSOR_ERROR_MAX
+            return State.by_value_and_speed(0.0, 0.0), SENSOR_ERROR_MAX
         else:
             # Second value is expected error
             return self.distance, _estimated_error_above_ground(orientation_quaternion)
@@ -74,4 +74,4 @@ def _calc_angle_to_up_axis(orientation_quaternion):
     # Now we have a right triangle, distance = length of hypothenuse
     # angle = arccos(dot(ultrasonic_beam, UP))
     # cos(angle) = height / distance
-    return math.arccos(numpy.dot(direction, UP_AXIS))
+    return math.acos(numpy.dot(direction, UP_AXIS))

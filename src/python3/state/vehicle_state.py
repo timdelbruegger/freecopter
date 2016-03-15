@@ -23,3 +23,6 @@ class VehicleState:
 
         self.air_pressure = pressure_temp.pressure
         self.temperature = pressure_temp.temperature
+
+    def __str__(self):
+        return jsonpickle.encode(self)

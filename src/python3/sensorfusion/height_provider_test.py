@@ -10,6 +10,7 @@ from util.definitions import *
 from state.attitude_state_test import imu_reading
 from state.vehicle_state import VehicleState
 from math import isnan, pi
+import logging
 import jsonpickle
 
 
@@ -61,6 +62,8 @@ class TestStateProvider(unittest.TestCase):
         self.assertEqual(invalid_counter.invalidElevationSpeedCounter, 0)
         self.assertEqual(invalid_counter.invalidElevationCounter, 0)
 
+        height_provider.stop()
+
 
 class MockListener:
     def __init__(self, tester):
@@ -107,4 +110,5 @@ class InvalidCounterListener:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()
