@@ -31,3 +31,20 @@ ULTRASONIC_SENSOR_ERROR = 0.03
 # we initialize the barometer state with this height above sea level.
 # The value does not really matter because in the beginning the expected error is really big.
 START_HEIGHT_ABOVE_SEA = 0
+
+# The ultrasonic range finder SR02's i2c address as reported by "i2detect -y 1"
+# For me, this is 0x70 or
+SRF02_I2C_ADDRESS = 0x70
+
+# minimum wait time after a burst before we try to read
+# This is not needed according to the specs. It is rather a workaround to prevent IOErrors that occur
+# when we read too early, probably a cause of operating the 5V device on the 3.3V i2c of the Raspberry Pi.
+SRF02_MIN_TIME_BETWEEN_BURST_READ = 0.065
+
+# From the data sheet: Do not initiate a ranging faster than every 65mS to give the previous burst time to fade away.
+# specs say: 65ms
+SRF02_MIN_TIME_BETWEEN_BURSTS = 0.065
+
+# specs say: 70ms
+SRF02_MAX_WAIT_TIME = 0.070
+
