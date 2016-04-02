@@ -48,3 +48,14 @@ SRF02_MIN_TIME_BETWEEN_BURSTS = 0.065
 # specs say: 70ms
 SRF02_MAX_WAIT_TIME = 0.070
 
+# maximum distance that can be measured in meters
+SRF02_MAX_RANGE = 5
+
+# expected error (in meters) of the reported distance if the reported distance is lower or near to the current minimum range (approx. 15cm)
+SRF02_SENSOR_ERROR_LOW_RANGE = 0.15
+
+# expected error (in meters) of the reported distance if the reported distance is between the current minimal range (approx. 15cm) and SRF02_MAX_RANGE
+SRF02_SENSOR_ERROR_GOOD_RANGE = 0.01
+
+# expected error (in meters) of the reported distance if the reported distance is higher than SRF02_MAX_RANGE
+SRF02_SENSOR_ERROR_HIGH_RANGE = 1

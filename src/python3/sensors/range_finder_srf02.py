@@ -1,6 +1,6 @@
 from smbus import SMBus
 from datetime import datetime, timedelta
-from util.definitions import SRF02_MIN_TIME_BETWEEN_BURSTS, SRF02_I2C_ADDRESS, SRF02_MIN_TIME_BETWEEN_BURST_READ, SRF02_MAX_WAIT_TIME
+from util.definitions import *
 import logging
 
 log = logging.getLogger("SRF02")
@@ -16,7 +16,6 @@ log = logging.getLogger("SRF02")
 #
 # See the datasheet: http://www.robot-electronics.co.uk/htm/srf02techI2C.htm
 class SRF02:
-
     def __init__(self):
 
         self._i2c = SMBus(1)
@@ -52,7 +51,7 @@ class SRF02:
         now = datetime.now()
         time_since_last_burst = (now - self._time_last_burst).total_seconds()
 
-#        log.debug("time since last burst: {}".format(time_since_last_burst))
+        #        log.debug("time since last burst: {}".format(time_since_last_burst))
 
         if self._waiting_for_echo:
             # make sure we wait at least some amount of time before we read
@@ -70,7 +69,9 @@ class SRF02:
         if (not self._waiting_for_echo) and time_since_last_burst > SRF02_MIN_TIME_BETWEEN_BURSTS:
             self._send_burst()
 
-        return distance
+        expected_error = self._calc_expected_error(distance)
+
+        return distance, expected_error
 
     def _send_burst(self):
         self._i2c.write_byte_data(self._i2c_address, 0, 0x51)
@@ -106,6 +107,8 @@ class SRF02:
 
         return self.distance
 
+    # The version can be read from register 0.
+    # Reading it has no real value for us, but we can use it to determine if a measurement is finished or not.
     def _read_version(self):
         try:
             return self._i2c.read_byte_data(self._i2c_address, 0)
@@ -115,3 +118,22 @@ class SRF02:
             log.error("Recovering from IOError")
             self.error_counter += 1
             return 255
+
+    # find out what kind of error we expect (used in sensor fusion)
+    def _calc_expected_error(self, distance):
+
+        # no reading at all
+        if distance is None:
+            return SENSOR_ERROR_MAX
+
+        # object too close
+        if distance <= self.mindistance:
+            return SRF02_SENSOR_ERROR_LOW_RANGE
+
+        # good distance, nice measurement
+        elif distance <= SRF02_MAX_RANGE:
+            return SRF02_SENSOR_ERROR_GOOD_RANGE
+
+        # object too far
+        else:
+            return SRF02_SENSOR_ERROR_HIGH_RANGE
