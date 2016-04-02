@@ -6,7 +6,7 @@ import time
 
 # In order to execute this test, an RTIMULib compatible MPU must be available and configured.
 #  This is a check to see if the software is capable of reading values from the hardware.
-class TestStateProvider(unittest.TestCase):
+class TestAttitudeProvider(unittest.TestCase):
     def test_zero(self):
         mock_listener = MockListener(self)
         invalid_counter = InvalidCounterListener()

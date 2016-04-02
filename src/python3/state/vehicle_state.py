@@ -2,7 +2,6 @@ from state.pressure_temp_state import PressureTemperatureState
 from state.attitude_state import AttitudeState
 from state.height_state import HeightState
 from state.gps_state import GPSState
-import jsonpickle
 
 
 # Represents all the knowledge about our quadrocopter that we have at one point in time
@@ -24,5 +23,7 @@ class VehicleState:
         self.air_pressure = pressure_temp.pressure
         self.temperature = pressure_temp.temperature
 
-    def __str__(self):
-        return jsonpickle.encode(self)
+    def fields(self):
+        return {
+            "height_above_ground": self.height.height_above_ground,
+            "temperature": self.temperature}

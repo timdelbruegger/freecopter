@@ -11,7 +11,6 @@ from state.attitude_state_test import imu_reading
 from state.vehicle_state import VehicleState
 from math import isnan, pi
 import logging
-import jsonpickle
 
 
 #  In order to execute this test, an RTIMULib compatible MPU must be available and configured.
@@ -93,7 +92,7 @@ class InvalidCounterListener:
         assert(not isnan(time_delta))
         assert(isinstance(newstate, VehicleState))
 
-        print(jsonpickle.encode(newstate))
+        logging.info(newstate)
 
         if isnan(newstate.temperature):
             self.temperatureInvalidCounter += 1

@@ -21,7 +21,7 @@ class LoggingStateProviderWithListeners:
 
         # new state is ready, we can print it
         self.log.debug("Notify listeners of new state")
-        self.log.debug(newstate)
+        self.log.debug("%s", newstate)
 
         # give new state to listeners
         time_since_last_update = self.__timer.readAndReset()

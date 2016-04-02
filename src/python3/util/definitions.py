@@ -38,7 +38,7 @@ SRF02_I2C_ADDRESS = 0x70
 
 # minimum wait time after a burst before we try to read
 # This is not needed according to the specs. It is rather a workaround to prevent IOErrors that occur
-# when we read too early, probably a cause of operating the 5V device on the 3.3V i2c of the Raspberry Pi.
+# when we read although the measurement is not done yet.
 SRF02_MIN_TIME_BETWEEN_BURST_READ = 0.065
 
 # From the data sheet: Do not initiate a ranging faster than every 65mS to give the previous burst time to fade away.

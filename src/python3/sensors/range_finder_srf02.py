@@ -91,6 +91,7 @@ class SRF02:
         # We use the version information to detect if the result is there yet.
         # 255 is a dummy version for the case that no echo has been received yet. For me, the real version is "6".
         if self._read_version() == 255:
+            log.debug("Version is 255")
             return None
 
         self.distance = self._i2c.read_word_data(self._i2c_address, 2) / 255 / 100
