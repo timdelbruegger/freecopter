@@ -14,9 +14,12 @@ from state.logging_state_provider import LoggingStateProviderWithListeners
 from util.definitions import *
 
 
-# Accumulates data from gyroscope, accelerometer, magnetometer.
-# Uses the RTIMULib Attitude Sensor Fusion.
+
 class AttitudeProvider (LoggingStateProviderWithListeners):
+    """
+    Accumulates data from gyroscope, accelerometer, magnetometer into one AttitudeState that describes the orientation
+    of the vehicle in the air. Uses the RTIMULib Attitude Sensor Fusion.
+    """
     def __init__(self):
 
         super().__init__("AttitudeProvider")
@@ -53,8 +56,12 @@ class AttitudeProvider (LoggingStateProviderWithListeners):
 
         self.state = None
 
-    # Combines IMU and Pressure readings into a state
     def _read_state(self, imu_data):
+        """
+        Combines IMU and Pressure readings into a state
+        :param imu_data: dictionary of data from RTIMULib
+        :return: AttitudeState (describing the orientation of the vehicle)
+        """
 
         self.log.debug("---------------  AttitudeProvider: read state  ---------------------")
         self.log.debug(imu_data)
@@ -67,8 +74,11 @@ class AttitudeProvider (LoggingStateProviderWithListeners):
 
         return AttitudeState(imu_data)
 
-    # Busily waits for the next IMU sensor reading, then notifies listeners of the new state.
     def update(self):
+        """ Busily waits for the next IMU sensor reading (this should not take too long).
+        Then notifies listeners of the new state.
+        :return: The new AttitudeState (describing the orientation of the vehicle)
+        """
         finished = False
         while not finished:
             if self.imu.IMURead():

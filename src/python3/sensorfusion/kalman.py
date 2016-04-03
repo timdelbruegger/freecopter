@@ -20,10 +20,10 @@ def kf_predict(x, P, A, Q, B, u):
     logger.debug("x: %s", x)
     logger.debug("u: %s", u)
 
-    logger.debug("A: %s", A.shape)
-    logger.debug("B: %s", B.shape)
-    logger.debug("x: %s", x.shape)
-    logger.debug("U: %s", u.shape)
+    logger.debug("shape A: %s", A.shape)
+    logger.debug("shape B: %s", B.shape)
+    logger.debug("shape x: %s", x.shape)
+    logger.debug("shape u: %s", u.shape)
 
     assert(shape(u)[0] == B.shape[1])
     assert(A.shape[1] == B.shape[0])

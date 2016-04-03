@@ -1,15 +1,13 @@
 import unittest
-from numpy import array
 from sensorfusion.height_provider import HeightProvider, correct_ultrasonic_angle
 import time
-from quaternion import Quaternion
 
 from state.attitude_state import AttitudeState
 
 from util.definitions import *
 from state.attitude_state_test import imu_reading
 from state.vehicle_state import VehicleState
-from math import isnan, pi
+from math import isnan
 import logging
 
 
@@ -20,9 +18,7 @@ class TestStateProvider(unittest.TestCase):
         mock_listener = MockListener(self)
         invalid_counter = InvalidCounterListener()
 
-        height_provider = HeightProvider(RT_IMU_SETTINGS,
-                                         ultrasonic_gpio_trigger=GPIO_ULTRASONIC_TRIGGER,
-                                         ultrasonic_gpio_echo=GPIO_ULTRASONIC_ECHO)
+        height_provider = HeightProvider()
 
         attitude_state = AttitudeState(imu_reading)
 

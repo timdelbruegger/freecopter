@@ -6,4 +6,4 @@
 	url = https://github.com/tommyjcarpenter/gps-python3.git
 [submodule "lib/pyquaternion"]
 	path = lib/pyquaternion
-	url = https://github.com/timdelbruegger/pyquaternion.git
+	url = https://github.com/KieranWynn/pyquaternion.git

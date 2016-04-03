@@ -1,17 +1,16 @@
 import logging
-
 from numpy import *
-
 from sensorfusion.kalman import KalmanFilter
 from state.logging_state_provider import LoggingStateProviderWithListeners
 from state.height_state import HeightState
 from sensors.pressure_sensor import PressureTemperatureSensor
-from sensors.range_finder_process import UltrasonicRangeFinderProcess
+from sensors.range_finder_srf02 import SRF02
 from sensors.gps_polling_thread import GpsPollingThread
 from util.timer import Timer
 from state.vehicle_state import VehicleState
 from util.definitions import *
-from quaternion import Quaternion
+from pyquaternion import Quaternion
+from sensors.range_finder_height_above_ground_adapter import RangeFinderHeightAboveGroundAdapter
 
 
 # F: state transition matrix
@@ -29,25 +28,25 @@ def F(delta_time):
 def B(delta_time):
     return array([
         # vertical acceleration influences the altitude quadratically
-        [0.5*square(delta_time)],
+        [0.5 * square(delta_time)],
         # vertical acceleration influences the vertical speed linearly
         [delta_time],
         # vertical acceleration does not influence GPS / barometer ground offsets
         [0], [0]])
 
 
-# Reads Barometer + ultrasonic sensor + GPS and fuses them with accelerometer to gather good knowledge of the
-# height above ground. See https://timdelbruegger.wordpress.com/2016/01/05/altitude-sensor-fusion/
 class HeightProvider(LoggingStateProviderWithListeners):
+    """ Reads Barometer + ultrasonic sensor + GPS and fuses them with linear accelerations to gather good knowledge of
+    the height above ground and the (world space) vertical speed.
+    See https://timdelbruegger.wordpress.com/2016/01/05/altitude-sensor-fusion/
+    """
 
-    def __init__(self, rt_imu_settings, ultrasonic_gpio_trigger, ultrasonic_gpio_echo, gps_enabled=False):
+    def __init__(self, gps_enabled=False):
         super().__init__("HeightProvider")
 
         self.log.debug("setup sensors...")
         self.barometer = PressureTemperatureSensor(RT_IMU_SETTINGS)
-        self.ultrasonic = UltrasonicRangeFinderProcess(ultrasonic_gpio_trigger, ultrasonic_gpio_echo)
-
-        self.ultrasonic.start()
+        self.ultrasonic = RangeFinderHeightAboveGroundAdapter(SRF02())
 
         self.gps = GpsPollingThread(gps_enabled)
         if gps_enabled:
@@ -89,7 +88,6 @@ class HeightProvider(LoggingStateProviderWithListeners):
         self.log.debug("HeightProvider is ready.")
 
     def stop(self):
-        self.ultrasonic.stop()
         self.gps.stop()
 
     # perform an update after the given amount of time
@@ -102,13 +100,13 @@ class HeightProvider(LoggingStateProviderWithListeners):
         # It does not matter if the sensors are not ready, because then the variance will be very big
         # and other sensors and the state transition will take over.
         baro_reading = self.barometer.read()
-        (dist_ultrasonic, ultrasonic_error) = self.ultrasonic.read_distance(attitude_state.orientation)
+        (dist_ultrasonic, ultrasonic_error) = self.ultrasonic.update(attitude_state.orientation)
         gps_reading = self.gps.read()
 
         # TODO: correct ultrasonic measurement by angle to ground normal
         # maybe we don't need this as the ultrasonic wave has some width? For now,
         # we only adjust the accuracy based on the angle
-        height_ultrasonic = dist_ultrasonic.value
+        height_ultrasonic = dist_ultrasonic
 
         # calculate vertical acceleration based on accelerometer data
         vertical_acceleration = calculate_up_acceleration(attitude_state.orientation, attitude_state.acceleration)
@@ -131,7 +129,7 @@ class HeightProvider(LoggingStateProviderWithListeners):
         R = diag([baro_reading.height_above_sea_error, ultrasonic_error, gps_reading.altitude_error])
 
         # Kalman Step 2: Update with measurements
-        self.log.error("Y: %s", Y)
+        self.log.info("Y: %s", Y)
         self.log.debug("R: %s", R)
         (x, P) = self.kf.updateWithMeasurement(Y, R)
 
@@ -142,15 +140,14 @@ class HeightProvider(LoggingStateProviderWithListeners):
         return newstate
 
 
-# Calculates the distance above ground from an ultrasonic measurement facing down.
+# Calculates the distance above ground from a ray measurement facing down.
 # The ground is assumed to be planar with normal (0,1,0).
-# The ultrasonic sensor beam is assumed to be a ray.
+# The ultrasonic sensor beam is assumed to be a ray. This is the reason why this method is currently not used in the real code.
 # distance is assumed to be meters
 # TODO: Check how narrow the sensor beam really is
 def correct_ultrasonic_angle(orientation, distance):
-
-    assert(isinstance(orientation, Quaternion))
-    assert(isinstance(distance, float))
+    assert (isinstance(orientation, Quaternion))
+    assert (isinstance(distance, float))
 
     # The quaternions in RTIMULib are thought to start at (0,0,1)
     # turn Z by orientation quaternion
@@ -175,6 +172,5 @@ def calculate_up_acceleration(orientation, acceleration_body_frame):
 
 # Transforms a body frame direction vector to world centric coordinates based on a given orientation quaternion
 def body_to_world_frame(orientation, vector):
-
     # revert the body orientation to get the world coordinates
     return orientation.inverse().rotate(vector)
