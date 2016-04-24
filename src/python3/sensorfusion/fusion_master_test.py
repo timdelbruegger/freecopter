@@ -1,6 +1,7 @@
 import unittest
 from sensorfusion.height_provider import HeightProvider, correct_ultrasonic_angle
 import time
+import numpy as np
 
 from sensorfusion.fusion_master import SensorFusionMaster
 import logging
@@ -40,14 +41,15 @@ class TestFusionMaster(unittest.TestCase):
 
             logging.info("height above ground: {}".format(state.height.height_above_ground))
             logging.info("vertical speed: {}".format(state.height.vertical_speed))
-            logging.info("barometer ground height: {}".format(state.height.ground_height_barometer))
+            #logging.info("barometer ground height: {}".format(state.height.ground_height_barometer))
 
             # TODO: correct axis
-            logging.info("yaw, pitch, roll: {}, {}, {}".format(state.attitude.rotation.x, state.attitude.rotation.y, state.attitude.rotation.z))
+            #logging.info("yaw, pitch, roll: {}, {}, {}".format(state.attitude.rotation.x, state.attitude.rotation.y, state.attitude.rotation.z))
 
             time.sleep(0.001)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
+    np.set_printoptions(suppress=True)
     unittest.main()

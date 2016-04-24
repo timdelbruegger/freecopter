@@ -17,8 +17,8 @@ class RangeFinderHeightAboveGroundAdapter:
         self.range_finder = range_finder
 
     def update(self, attitude):
-        print(type(attitude).__name__)
-        print(attitude)
+        # print(type(attitude).__name__)
+        # print(attitude)
         assert(isinstance(attitude, Quaternion))
 
         # update range finder
@@ -47,6 +47,7 @@ class RangeFinderHeightAboveGroundAdapter:
 
 def calc_error_multiplier(attitude):
     angle_to_up = _calc_angle_to_up_axis(attitude) / math.pi
+    # print("angle_to_up = {}".format(angle_to_up))
 
     # smaller than 45 degrees is no problem, the range finder waves have a rather wide angle
     if angle_to_up < 0.25:
@@ -57,11 +58,18 @@ def calc_error_multiplier(attitude):
 
 
 def _calc_angle_to_up_axis(orientation_quaternion):
-    # The quaternions in RTIMULib are thought to start at (0,0,1)
+    # The quaternions in RTIMULib are thought to start at (FORWARD_AXIS)
     # turn Z by orientation quaternion
-    direction = orientation_quaternion.rotate(FORWARD_AXIS)
+    # forward_direction = orientation_quaternion.rotate(FORWARD_AXIS)
+    # right_direction = orientation_quaternion.rotate(RIGHT_AXIS)
+    up_direction = orientation_quaternion.rotate(UP_AXIS)
+
+    # print("forward_direction = {}".format(forward_direction))
+    # print("right_direction = {}".format(right_direction))
+    # print("up_direction = {}".format(up_direction))
+
     # this is the angle between the ultrasonic beam and the real direction to ground
     # Now we have a right triangle, distance = length of hypothenuse
     # angle = arccos(dot(ultrasonic_beam, UP))
     # cos(angle) = height / distance
-    return math.acos(numpy.dot(direction, UP_AXIS))
+    return math.acos(numpy.dot(up_direction, UP_AXIS))

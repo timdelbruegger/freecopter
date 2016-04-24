@@ -103,7 +103,6 @@ class HeightProvider(LoggingStateProviderWithListeners):
         (dist_ultrasonic, ultrasonic_error) = self.ultrasonic.update(attitude_state.orientation)
         gps_reading = self.gps.read()
 
-        # TODO: correct ultrasonic measurement by angle to ground normal
         # maybe we don't need this as the ultrasonic wave has some width? For now,
         # we only adjust the accuracy based on the angle
         height_ultrasonic = dist_ultrasonic
@@ -129,7 +128,7 @@ class HeightProvider(LoggingStateProviderWithListeners):
         R = diag([baro_reading.height_above_sea_error, ultrasonic_error, gps_reading.altitude_error])
 
         # Kalman Step 2: Update with measurements
-        self.log.info("Y: %s", Y)
+        self.log.debug("Y: %s", Y)
         self.log.debug("R: %s", R)
         (x, P) = self.kf.updateWithMeasurement(Y, R)
 

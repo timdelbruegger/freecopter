@@ -11,10 +11,15 @@ RT_IMU_LIB_SETTINGS_FILE = "RTIMULib"
 # The settings object
 RT_IMU_SETTINGS = RTIMU.Settings(RT_IMU_LIB_SETTINGS_FILE)
 
+# This is the RTIMULib RTIMU_XEAST_YNORTH 5
 # In a 3d vector with indizes (0,1,2), this index is for the "Up" direction
-UP_AXIS_INDEX = 1
-UP_AXIS = array([0, 1, 0])
-FORWARD_AXIS = array([0, 0, 1])
+UP_AXIS_INDEX = 2
+UP_AXIS = array([0, 0, 1])
+FORWARD_AXIS = array([1, 0, 0])
+RIGHT_AXIS = array([0, 1, 0])
+YAW_AXIS = UP_AXIS
+PITCH_AXIS = RIGHT_AXIS
+ROLL_AXIS = FORWARD_AXIS
 
 # Maximum expected error that might possibly happen.
 # This is used if no data is available, for example if we don't have enough satellites for a GPS fix.
